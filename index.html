@@ -1,115 +1,167 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayoub Alwulayi - Portfolio</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background: #0f172a;
-            color: #e5e7eb;
-        }
+<style>
+  #heart-canvas { display: block; margin: 0 auto; }
+  #msg { text-align: center; font-size: 22px; font-weight: 500; color: #e0294a; opacity: 0; transition: opacity 1.5s; margin-top: 12px; font-family: Georgia, serif; letter-spacing: 1px; }
+  #btn-wrap { text-align: center; margin-top: 16px; }
+  button { cursor: pointer; padding: 8px 28px; border-radius: 20px; border: 1.5px solid #e0294a; background: transparent; color: #e0294a; font-size: 15px; transition: background 0.2s, color 0.2s; }
+  button:hover { background: #e0294a; color: #fff; }
+</style>
+<canvas id="heart-canvas" width="520" height="460"></canvas>
+<div id="msg">I love you ❤️</div>
+<div id="btn-wrap"><button id="replay-btn">Draw again</button></div>
+<script>
+(function() {
+  const canvas = document.getElementById('heart-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2 + 20;
 
-        .container {
-            max-width: 900px;
-            margin: auto;
-            padding: 20px;
-        }
+  function heartX(t) {
+    return 16 * Math.pow(Math.sin(t), 3);
+  }
+  function heartY(t) {
+    return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+  }
 
-        h1, h2 {
-            color: #38bdf8;
-        }
+  const SCALE = 15;
+  const STEPS = 360;
+  const points = [];
+  for (let i = 0; i <= STEPS; i++) {
+    const t = (i / STEPS) * 2 * Math.PI;
+    points.push({
+      x: cx + heartX(t) * SCALE,
+      y: cy - heartY(t) * SCALE
+    });
+  }
 
-        .card {
-            background: #1e293b;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 8px;
-        }
+  let animId = null;
+  let step = 0;
+  const DELAY = 5;
+  let frameCount = 0;
 
-        ul {
-            padding-left: 20px;
-        }
+  function lerp(a, b, t) { return a + (b - a) * t; }
 
-        a.button {
-            display: inline-block;
-            padding: 10px 15px;
-            background: #38bdf8;
-            color: black;
-            text-decoration: none;
-            margin-top: 10px;
-            border-radius: 5px;
-        }
+  function getColor(progress) {
+    const r1 = 230, g1 = 41, b1 = 74;
+    const r2 = 255, g2 = 100, b2 = 130;
+    const r = Math.round(lerp(r1, r2, progress));
+    const g = Math.round(lerp(g1, g2, progress));
+    const b = Math.round(lerp(b1, b2, progress));
+    return `rgb(${r},${g},${b})`;
+  }
 
-        a.button:hover {
-            background: #0ea5e9;
-        }
+  function drawBackground() {
+    ctx.clearRect(0, 0, W, H);
+  }
 
-        .contact {
-            margin-top: 10px;
-            font-size: 14px;
-        }
-    </style>
-</head>
+  function drawTrail() {
+    if (step < 2) return;
+    const trailLen = Math.min(step, 18);
+    for (let i = Math.max(0, step - trailLen); i < step - 1; i++) {
+      const progress = i / STEPS;
+      ctx.beginPath();
+      ctx.moveTo(points[i].x, points[i].y);
+      ctx.lineTo(points[i+1].x, points[i+1].y);
+      ctx.strokeStyle = getColor(progress);
+      ctx.lineWidth = 3.5;
+      ctx.globalAlpha = 0.18 + 0.7 * ((i - (step - trailLen)) / trailLen);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
 
-<body>
+  function drawCompleted() {
+    for (let i = 0; i < step - 1; i++) {
+      const progress = i / STEPS;
+      ctx.beginPath();
+      ctx.moveTo(points[i].x, points[i].y);
+      ctx.lineTo(points[i+1].x, points[i+1].y);
+      ctx.strokeStyle = getColor(progress);
+      ctx.lineWidth = 3.5;
+      ctx.globalAlpha = 1;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
 
-<div class="container">
+  function drawDot() {
+    if (step >= points.length) return;
+    const p = points[step];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.9;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffb3c6';
+    ctx.fill();
+  }
 
-    <h1>Ayoub Alwulayi</h1>
-    <p>Computer Engineering Student</p>
+  function animate() {
+    frameCount++;
+    if (frameCount % 2 !== 0) {
+      animId = requestAnimationFrame(animate);
+      return;
+    }
+    drawBackground();
+    drawCompleted();
+    drawTrail();
+    drawDot();
+    step++;
+    if (step < points.length) {
+      animId = requestAnimationFrame(animate);
+    } else {
+      finalize();
+    }
+  }
 
-    <div class="contact">
-         iayoubeng@gmail.com <br>
-         +966 55 162 5307
-    </div>
+  function finalize() {
+    drawBackground();
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.closePath();
+    const grad = ctx.createRadialGradient(cx, cy - 40, 10, cx, cy, 180);
+    grad.addColorStop(0, 'rgba(255,120,150,0.38)');
+    grad.addColorStop(1, 'rgba(220,30,60,0.10)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
 
-    <div class="card">
-        <h2>Summary</h2>
-        <p>
-            Computer Engineering student at Al Qassim University with experience in backend development,
-            embedded systems, and FPGA design. Skilled in Node.js, REST APIs, and low-level programming.
-            Seeking a summer internship in Software Engineering or Backend Development.
-        </p>
-    </div>
+    for (let i = 0; i < points.length - 1; i++) {
+      const progress = i / STEPS;
+      ctx.beginPath();
+      ctx.moveTo(points[i].x, points[i].y);
+      ctx.lineTo(points[i+1].x, points[i+1].y);
+      ctx.strokeStyle = getColor(progress);
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
 
-    <div class="card">
-        <h2>Technical Skills</h2>
-        <ul>
-            <li><b>Languages:</b> JavaScript, C++, C, Python, SQL, Avr C, Verilog, Assembly</li>
-            <li><b>Backend:</b> Node.js, Express.js, REST APIs</li>
-            <li><b>Tools:</b>MATLAP, Protues, KiCad, Git, GitHub, VSCode</li>
-            <li><b>Embedded:</b> Arduino, ATmega328P, I2C, SPI</li>
-            <li><b>FPGA:</b> Vivado, ISE, FSM Design</li>
-        </ul>
-    </div>
+    setTimeout(() => {
+      document.getElementById('msg').style.opacity = '1';
+    }, 200);
+  }
 
-    <div class="card">
-        <h2>Projects</h2>
-        <ul>
-             <li><b>Graduation Project:</b> Drone Control System (Arduino + MPU6050)</li>
-            <li><b>RESTful API System:</b> Built backend using Node.js & Express with SQL database</li>
-            <li><b>Temperature Control System:</b> AVR-based system with LM35 sensor</li>
-            <li><b>LCD Driver:</b> Low-level C driver for 16x2 LCD</li>
-            <li><b>LTI Analysis:</b> MATLAB signal processing project</li>
-        </ul>
-    </div>
+  function startAnimation(customMsg) {
+    if (animId) cancelAnimationFrame(animId);
+    step = 0;
+    frameCount = 0;
+    document.getElementById('msg').style.opacity = '0';
+    drawBackground();
+    animId = requestAnimationFrame(animate);
+  }
 
-    <div class="card">
-        <h2>Education</h2>
-        <p>Bachelor of Computer Engineering – Al Qassim University</p>
-        <p>GPA: 3.97 / 5.0 (Graduating next semester)</p>
-    </div>
+  document.getElementById('replay-btn').addEventListener('click', startAnimation);
 
-    <div class="card">
-        <h2>Resume</h2>
-        <a class="button" href="Ayoub_Resume2.pdf" target="_blank">Click to see in PDF form</a>
-    </div>
-
-</div>
-
-</body>
-</html>
+  startAnimation();
+})();
+</script>
